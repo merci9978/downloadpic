@@ -1,0 +1,43 @@
+name: Multi-Cam Capture & Auto Commit
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  capture-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run capture script
+        run: python capture_all.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add 19watergate/ longshan/
+          if git diff --cached --quiet; then
+            echo "沒有檔案變更"
+          else
+            git commit -m "Auto capture: $(date '+%Y-%m-%d %H:%M:%S') [skip ci]"
+            git push
+          fi
+
+          # trigger cron
